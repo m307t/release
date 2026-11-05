@@ -1,0 +1,14 @@
+# Keep script line endings correct on every PC.
+*.cmd text eol=crlf
+*.sh  text eol=lf
+*.py  text eol=lf
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+*.mjs text eol=lf
+*.exe binary
+
+# Tables that only grow by new rows: when two PCs add rows at the same time, keep both rows
+# instead of stopping the sync with a conflict. Do not add tables whose rows get edited.
+라운지/오류노트.md text merge=union
+라운지/훈련기록.md text merge=union
+변경이력.md text merge=union
