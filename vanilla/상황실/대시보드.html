@@ -1,0 +1,1235 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>진행 현황 대시보드</title>
+<!--
+  Offline viewer for 상황실/대시보드_데이터.js (made by 도구/대시보드갱신.py).
+  No network requests, no external resources. All data is inserted with textContent.
+  The data file holds case content: it is git-ignored and this page is never published.
+-->
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f4f5f7;
+  --surface: #ffffff;
+  --surface-2: #f7f8fa;
+  --surface-3: #eef0f3;
+  --text: #1a1d21;
+  --text-2: #4f5762;
+  --text-3: #687180;
+  --border: #e1e4e8;
+  --border-2: #cdd2d8;
+  --accent: #2557c7;
+  --accent-soft: #e8eefb;
+  --on-accent: #ffffff;
+  --ok: #19723f;
+  --ok-soft: #e3f3e9;
+  --warn: #8a5300;
+  --warn-soft: #fdf1d8;
+  --danger: #b42318;
+  --danger-soft: #fdeceb;
+  --neutral: #555d68;
+  --neutral-soft: #eceef1;
+  --bar: #2a78d6;
+  --bar-track: #e6edf8;
+  --shadow: 0 1px 2px rgba(16, 24, 40, 0.05), 0 1px 3px rgba(16, 24, 40, 0.07);
+  --radius: 10px;
+  --font: "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+  --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, "Malgun Gothic", monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg: #0f1114;
+    --surface: #181b20;
+    --surface-2: #1d2127;
+    --surface-3: #252a31;
+    --text: #e8eaed;
+    --text-2: #b4bcc6;
+    --text-3: #8f98a3;
+    --border: #2b3038;
+    --border-2: #3a414b;
+    --accent: #84aaff;
+    --accent-soft: #1c2945;
+    --on-accent: #0f1114;
+    --ok: #5ccf8e;
+    --ok-soft: #13301f;
+    --warn: #f2b84b;
+    --warn-soft: #352810;
+    --danger: #ff8a80;
+    --danger-soft: #3b1a19;
+    --neutral: #aab2bc;
+    --neutral-soft: #262b32;
+    --bar: #3987e5;
+    --bar-track: #1c2945;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  }
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.6 var(--font);
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+h1, h2, h3 { margin: 0; line-height: 1.35; }
+p { margin: 0; }
+code {
+  font-family: var(--mono);
+  font-size: 0.88em;
+  background: var(--surface-3);
+  border-radius: 4px;
+  padding: 0.05em 0.35em;
+  overflow-wrap: anywhere;
+}
+button, select, input { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+[hidden] { display: none !important; }
+
+.wrap { max-width: 1240px; margin: 0 auto; padding: 0 16px; }
+.dim { color: var(--text-3); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.small { font-size: 13px; }
+
+/* Header and tabs */
+.top { background: var(--surface); border-bottom: 1px solid var(--border); }
+.top .wrap { padding-top: 18px; padding-bottom: 14px; }
+.eyebrow { font-size: 13px; color: var(--text-3); letter-spacing: 0.02em; }
+h1 { font-size: 22px; font-weight: 700; margin-top: 2px; }
+.meta { margin-top: 4px; font-size: 13px; color: var(--text-2); }
+.nav {
+  position: sticky; top: 0; z-index: 5;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  border-bottom: 1px solid var(--border);
+}
+@supports not (background: color-mix(in srgb, red 50%, blue)) { .nav { background: var(--surface); } }
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 0; }
+.tab {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-2);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tab:hover { background: var(--surface-3); color: var(--text); }
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.tab .count { font-weight: 500; opacity: 0.8; margin-left: 4px; font-variant-numeric: tabular-nums; }
+
+main.wrap { padding-top: 20px; padding-bottom: 32px; }
+.panel { display: grid; gap: 16px; }
+.panel:focus { outline: none; }
+.banner {
+  border-radius: var(--radius); padding: 10px 14px; margin-bottom: 14px; font-size: 14px;
+  background: var(--accent-soft); color: var(--text); border: 1px solid var(--border);
+}
+.banner.warn { background: var(--warn-soft); }
+
+/* Cards */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px 18px;
+  min-width: 0;
+}
+.card-h { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin-bottom: 12px; }
+.card-h h2 { font-size: 16px; font-weight: 700; }
+.card-h .sub { font-size: 13px; color: var(--text-3); }
+.card-h .right { margin-left: auto; }
+.note { font-size: 13px; color: var(--text-2); margin-top: 10px; }
+.grid-2 { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+.grid-2 > *, .grid-3 > * { min-width: 0; }
+.grid-3 { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+
+/* KPI tiles */
+.kpis { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+.kpi {
+  text-align: left;
+  display: flex; flex-direction: column; gap: 2px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--border-2);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 12px 14px 12px 14px;
+  cursor: pointer;
+  min-width: 0;
+}
+.kpi:hover { background: var(--surface-2); }
+.kpi-label { font-size: 13px; font-weight: 600; color: var(--text-2); }
+.kpi-value { font-size: 30px; font-weight: 700; line-height: 1.2; color: var(--text); }
+.kpi-value small { font-size: 14px; font-weight: 600; color: var(--text-3); margin-left: 3px; }
+.kpi-hint { font-size: 12px; color: var(--text-3); }
+.kpi[data-tone="accent"] { border-left-color: var(--accent); }
+.kpi[data-tone="warn"] { border-left-color: var(--warn); }
+.kpi[data-tone="danger"] { border-left-color: var(--danger); }
+.kpi[data-tone="warn"] .kpi-value { color: var(--warn); }
+.kpi[data-tone="danger"] .kpi-value { color: var(--danger); }
+
+/* Badges and chips */
+.badge, .chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  border-radius: 999px; padding: 1px 9px;
+  font-size: 12.5px; font-weight: 600; line-height: 1.6; white-space: nowrap;
+  background: var(--neutral-soft); color: var(--neutral);
+}
+.chip { font-variant-numeric: tabular-nums; padding: 0 7px; font-size: 12px; }
+.accent { background: var(--accent-soft); color: var(--accent); }
+.ok { background: var(--ok-soft); color: var(--ok); }
+.warn { background: var(--warn-soft); color: var(--warn); }
+.danger { background: var(--danger-soft); color: var(--danger); }
+.neutral { background: var(--neutral-soft); color: var(--neutral); }
+.outline { background: transparent; color: var(--text-2); box-shadow: inset 0 0 0 1px var(--border-2); }
+.badge::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.badge.outline::before { background: transparent; box-shadow: inset 0 0 0 1.5px currentColor; }
+
+/* Lists in the summary */
+.items { list-style: none; margin: 0; padding: 0; }
+.items li { padding: 10px 0; border-top: 1px solid var(--border); display: grid; gap: 3px; }
+.items li:first-child { border-top: 0; padding-top: 2px; }
+.items .line1 { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+.items .title { font-weight: 600; }
+.items .line2 { font-size: 13.5px; color: var(--text-2); }
+.linkbtn {
+  border: 0; background: none; padding: 0; color: var(--accent); cursor: pointer;
+  font-size: 13px; font-weight: 600; text-decoration: underline; text-underline-offset: 2px;
+}
+.warnlist { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 13.5px; }
+.warnlist li { display: flex; flex-wrap: wrap; gap: 4px 8px; }
+
+/* Toolbar */
+.toolbar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 14px; margin-bottom: 12px; }
+.field { display: grid; gap: 3px; font-size: 12.5px; color: var(--text-2); font-weight: 600; }
+.field select {
+  min-width: 128px; padding: 6px 30px 6px 10px; font-size: 14px; font-weight: 500;
+  border: 1px solid var(--border-2); border-radius: 8px; background-color: var(--surface);
+}
+.check { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; padding: 6px 0; cursor: pointer; }
+.check input { width: 16px; height: 16px; accent-color: var(--accent); margin: 0; }
+.check input:disabled + span { color: var(--text-3); }
+.toolbar .count { margin-left: auto; font-size: 13px; color: var(--text-3); padding: 6px 0; }
+
+/* Tables */
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid var(--border); border-radius: 8px; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; vertical-align: top; padding: 9px 12px; }
+thead th {
+  background: var(--surface-2); color: var(--text-2); font-size: 12.5px; font-weight: 700;
+  border-bottom: 1px solid var(--border); white-space: nowrap;
+}
+tbody tr + tr td, tbody tr.detail td { border-top: 1px solid var(--border); }
+tbody tr:not(.detail):hover td { background: var(--surface-2); }
+td.nw, th.nw { white-space: nowrap; }
+td.num { font-variant-numeric: tabular-nums; }
+td.wide { min-width: 15em; }
+td.mid { min-width: 9em; }
+.sort {
+  border: 0; background: none; padding: 0; cursor: pointer; font-weight: 700; color: inherit;
+  display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;
+}
+.sort .arrow { font-size: 10px; color: var(--accent); min-width: 8px; }
+.exp {
+  border: 0; background: none; padding: 0; cursor: pointer; text-align: left; color: inherit;
+  display: inline-flex; gap: 6px; align-items: flex-start; font-weight: 600;
+}
+.exp .exp-icon {
+  flex: none; width: 7px; height: 7px; margin: 0.6em 3px 0 1px;
+  border-right: 2px solid var(--text-3); border-bottom: 2px solid var(--text-3);
+  transform: rotate(-45deg); transition: transform 0.15s ease;
+}
+.exp[aria-expanded="true"] .exp-icon { transform: rotate(45deg); margin-top: 0.45em; }
+.exp:hover .folder { text-decoration: underline; text-underline-offset: 2px; }
+.folder { overflow-wrap: anywhere; }
+td.folder-col { min-width: 12.5em; }
+tr.detail td { background: var(--surface-2); padding: 12px 16px 14px 34px; }
+.kv { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 0; font-size: 13.5px; }
+.kv dt { color: var(--text-3); font-weight: 600; }
+.kv dd { margin: 0; min-width: 0; }
+.empty {
+  border: 1px dashed var(--border-2); border-radius: 8px; padding: 18px 16px; color: var(--text-2);
+  font-size: 14px; background: var(--surface-2);
+}
+.empty .hint { font-size: 13px; color: var(--text-3); margin-top: 4px; }
+.verdict { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.due { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.strike { text-decoration: line-through; color: var(--text-3); }
+
+/* Schedule */
+.bucket-h { display: flex; align-items: center; gap: 8px; }
+.bucket-h .mark { width: 10px; height: 10px; border-radius: 3px; background: var(--border-2); flex: none; }
+.bucket-h .mark.past { background: var(--danger); }
+.bucket-h .mark.next { background: var(--accent); }
+details.more { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 18px; }
+details.more > summary { cursor: pointer; font-weight: 700; font-size: 15px; }
+details.more[open] > summary { margin-bottom: 12px; }
+
+/* Bars (오류노트 counts) */
+.stats { display: flex; flex-wrap: wrap; gap: 10px 28px; margin-bottom: 16px; }
+.stat .v { font-size: 24px; font-weight: 700; line-height: 1.2; }
+.stat .l { font-size: 12.5px; color: var(--text-3); font-weight: 600; }
+.bars h3 { font-size: 13.5px; color: var(--text-2); margin-bottom: 8px; }
+.bars ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 7px; }
+.bars li { display: grid; grid-template-columns: minmax(4.5em, 7.5em) 1fr 2.2em; align-items: center; gap: 10px; font-size: 13.5px; }
+.bars .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bars .track { height: 8px; border-radius: 4px; background: var(--bar-track); overflow: hidden; }
+.bars .fill { display: block; height: 100%; border-radius: 4px; background: var(--bar); min-width: 4px; }
+.bars .n { text-align: right; font-variant-numeric: tabular-nums; color: var(--text-2); }
+.sub-h { font-size: 14.5px; font-weight: 700; margin: 18px 0 10px; }
+
+/* Checklists */
+.cl { border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; background: var(--surface-2); min-width: 0; }
+.cl h3 { font-size: 15px; }
+.cl .row { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 4px; }
+.cl details { margin-top: 6px; font-size: 13.5px; }
+.cl summary { cursor: pointer; color: var(--accent); font-weight: 600; }
+.cl ol { margin: 8px 0 0; padding-left: 1.4em; display: grid; gap: 4px; }
+
+/* Org chart */
+.building { display: grid; gap: 0; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--surface); box-shadow: var(--shadow); }
+.floor { display: grid; grid-template-columns: 132px 1fr; border-top: 1px solid var(--border); }
+.floor:first-child { border-top: 0; }
+.floor-label { background: var(--surface-2); padding: 16px; border-right: 1px solid var(--border); display: grid; align-content: start; gap: 2px; }
+.floor-no { font-size: 26px; font-weight: 800; line-height: 1.1; color: var(--accent); }
+.floor-title { font-size: 13px; font-weight: 600; color: var(--text-2); }
+.floor-body { padding: 14px; display: grid; gap: 12px; min-width: 0; }
+.rooms { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); align-items: start; min-width: 0; }
+.facilities { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.facilities li {
+  border: 1px solid var(--border); background: var(--surface-2); border-radius: 8px;
+  padding: 6px 12px; font-size: 13.5px; display: inline-flex; flex-wrap: wrap; gap: 2px 8px; align-items: baseline; min-width: 0;
+}
+.facilities .dim { font-size: 12.5px; }
+.room { border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; background: var(--surface); min-width: 0; display: grid; gap: 6px; align-content: start; }
+.room h3 { font-size: 15px; }
+.room.plain { background: var(--surface-2); }
+.room.person { border-color: var(--warn); box-shadow: inset 3px 0 0 var(--warn); }
+.room-note { font-size: 13px; color: var(--text-2); }
+.cmds { display: flex; flex-wrap: wrap; gap: 6px; align-items: baseline; }
+.cmd { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.roles { display: grid; grid-template-columns: max-content 1fr; gap: 4px 10px; margin: 2px 0 0; font-size: 13px; }
+.roles dt { color: var(--text-3); font-weight: 700; }
+.roles dd { margin: 0; min-width: 0; display: flex; flex-wrap: wrap; gap: 4px; }
+.room details { font-size: 13px; }
+.room summary { cursor: pointer; color: var(--accent); font-weight: 600; }
+.room details p { margin-top: 6px; color: var(--text-2); }
+.team-summary { font-size: 13px; color: var(--text-2); }
+
+/* No data */
+.nodata h2 { font-size: 18px; margin-bottom: 8px; }
+.nodata ol { margin: 12px 0; padding-left: 1.3em; display: grid; gap: 8px; }
+.nodata ol > li { min-width: 0; }
+.nodata pre {
+  margin: 6px 0 4px; padding: 10px 12px; max-width: 100%; background: var(--surface-3); border-radius: 8px;
+  overflow-x: auto; font-family: var(--mono); font-size: 13.5px;
+}
+.btn {
+  border: 1px solid var(--accent); background: var(--accent); color: var(--on-accent);
+  border-radius: 8px; padding: 7px 14px; font-weight: 600; cursor: pointer;
+}
+
+footer.wrap { padding-top: 0; padding-bottom: 28px; font-size: 13px; color: var(--text-2); }
+footer .foot { border-top: 1px solid var(--border); padding-top: 14px; display: grid; gap: 4px; }
+footer a { color: var(--accent); text-underline-offset: 2px; }
+
+@media (max-width: 640px) {
+  h1 { font-size: 19px; }
+  .top .wrap { padding-top: 14px; padding-bottom: 10px; }
+  .tabs { gap: 5px; padding: 8px 0; }
+  .tab { padding: 5px 11px; font-size: 13.5px; }
+  .card { padding: 14px; }
+  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .kpi-value { font-size: 26px; }
+  .grid-2 { grid-template-columns: minmax(0, 1fr); }
+  .floor { grid-template-columns: minmax(0, 1fr); }
+  .floor-label { border-right: 0; border-bottom: 1px solid var(--border); display: flex; align-items: baseline; gap: 10px; padding: 10px 14px; }
+  .floor-no { font-size: 20px; }
+  .rooms { grid-template-columns: minmax(0, 1fr); }
+  .floor-body { padding: 12px; }
+  .kpis > .kpi:last-child:nth-child(odd) { grid-column: 1 / -1; }
+  /* Tables become stacked cards; each cell shows its column name */
+  .table-wrap { border: 0; border-radius: 0; overflow: visible; }
+  table.stack { min-width: 0 !important; table-layout: auto !important; }
+  table.stack thead, table.stack colgroup { display: none; }
+  table.stack, table.stack tbody, table.stack tr, table.stack td { display: block; width: auto; }
+  table.stack tbody tr { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin-top: 8px; background: var(--surface); }
+  table.stack tbody tr:first-child { margin-top: 0; }
+  table.stack tbody tr + tr td, table.stack tbody tr.detail td { border-top: 0; }
+  table.stack td { display: grid; grid-template-columns: 5.6em minmax(0, 1fr); justify-items: start; gap: 10px; padding: 3px 0; white-space: normal; min-width: 0; }
+  table.stack td::before { content: attr(data-label); color: var(--text-3); font-size: 12.5px; font-weight: 600; line-height: 1.9; }
+  table.stack td:first-child { display: block; padding: 0 0 6px; font-weight: 600; }
+  table.stack td:first-child::before { content: none; }
+  table.stack td.blank { display: none; }
+  table.stack tbody tr:not(.detail):hover td { background: transparent; }
+  table.stack tr.detail { margin-top: 4px; background: var(--surface-2); }
+  table.stack tr.detail td { display: block; padding: 0; background: transparent; }
+  table.stack tr.detail td::before { content: none; }
+  .toolbar .count { margin-left: 0; width: 100%; padding: 0; }
+  .field select { min-width: 0; }
+  .kv { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .kv dd { margin-bottom: 6px; }
+  tr.detail td { padding-left: 16px; }
+}
+@media (prefers-reduced-motion: reduce) { .exp .exp-icon { transition: none; } }
+@media print {
+  .nav, .linkbtn, .btn { display: none !important; }
+  .panel[hidden] { display: grid !important; }
+  body { background: #fff; }
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <p class="eyebrow">상황실 · 법제업무팀</p>
+    <h1>진행 현황 대시보드</h1>
+    <p class="meta" id="meta">데이터를 읽는 중입니다.</p>
+  </div>
+</header>
+<nav class="nav" aria-label="대시보드 영역">
+  <div class="wrap">
+    <div class="tabs" id="tabs" role="tablist" aria-label="대시보드 영역">
+      <button class="tab" role="tab" id="tab-summary" data-tab="summary" aria-controls="panel-summary" aria-selected="true" type="button">요약</button>
+      <button class="tab" role="tab" id="tab-cases" data-tab="cases" aria-controls="panel-cases" aria-selected="false" tabindex="-1" type="button">건 진행</button>
+      <button class="tab" role="tab" id="tab-schedule" data-tab="schedule" aria-controls="panel-schedule" aria-selected="false" tabindex="-1" type="button">일정</button>
+      <button class="tab" role="tab" id="tab-issues" data-tab="issues" aria-controls="panel-issues" aria-selected="false" tabindex="-1" type="button">현안</button>
+      <button class="tab" role="tab" id="tab-lore" data-tab="lore" aria-controls="panel-lore" aria-selected="false" tabindex="-1" type="button">교본·오류</button>
+      <button class="tab" role="tab" id="tab-org" data-tab="org" aria-controls="panel-org" aria-selected="false" tabindex="-1" type="button">조직도</button>
+      <button class="tab" role="tab" id="tab-settings" data-tab="settings" aria-controls="panel-settings" aria-selected="false" tabindex="-1" type="button">설정</button>
+    </div>
+  </div>
+</nav>
+
+<main class="wrap" id="main">
+  <div id="banners"></div>
+  <section class="panel" role="tabpanel" id="panel-summary" aria-labelledby="tab-summary" tabindex="0"></section>
+  <section class="panel" role="tabpanel" id="panel-cases" aria-labelledby="tab-cases" tabindex="0" hidden></section>
+  <section class="panel" role="tabpanel" id="panel-schedule" aria-labelledby="tab-schedule" tabindex="0" hidden></section>
+  <section class="panel" role="tabpanel" id="panel-issues" aria-labelledby="tab-issues" tabindex="0" hidden></section>
+  <section class="panel" role="tabpanel" id="panel-lore" aria-labelledby="tab-lore" tabindex="0" hidden></section>
+  <section class="panel" role="tabpanel" id="panel-org" aria-labelledby="tab-org" tabindex="0" hidden></section>
+  <section class="panel" role="tabpanel" id="panel-settings" aria-labelledby="tab-settings" tabindex="0" hidden></section>
+
+  <section class="card nodata" id="nodata" hidden aria-labelledby="nodata-h">
+    <h2 id="nodata-h">아직 대시보드 데이터가 없습니다</h2>
+    <p>이 화면은 같은 폴더의 <code>대시보드_데이터.js</code>를 읽어 보여 줍니다. 데이터 파일은 건 내용을 담으므로 동기화하지 않고 PC마다 만듭니다.</p>
+    <ol>
+      <li>저장소 폴더에서 터미널(Windows는 명령 프롬프트)을 엽니다.</li>
+      <li>데이터를 만드는 도구를 실행합니다.
+        <pre>python3 도구/대시보드갱신.py</pre>
+        <span class="small dim">Windows는 <code>py -3 도구\대시보드갱신.py</code></span>
+      </li>
+      <li>이 화면을 새로 고칩니다(F5, macOS는 ⌘R).</li>
+    </ol>
+    <p class="dim small">Claude에게 "대시보드 갱신해 줘"라고 요청해도 됩니다. 도구가 만든 요약과 이 파일의 경로를 알려 줍니다.</p>
+    <p style="margin-top:14px"><button class="btn reload" type="button" id="reload">다시 읽기</button></p>
+  </section>
+
+  <section class="card nodata" id="mismatch" hidden aria-labelledby="mismatch-h">
+    <h2 id="mismatch-h">데이터 형식이 이 화면과 맞지 않습니다</h2>
+    <p>데이터 파일 <code>대시보드_데이터.js</code>를 만든 도구와 이 화면의 판이 다르거나, 파일이 중간에 끊겼습니다. 잘못 보여 주지 않으려고 화면을 그리지 않았습니다.</p>
+    <p class="small dim" id="mismatch-detail" style="margin-top:6px"></p>
+    <ol>
+      <li>도구(<code>도구/대시보드갱신.py</code>)와 화면(<code>상황실/대시보드.html</code>)을 같은 판으로 맞춥니다. 저장소를 동기화했다면 두 파일이 함께 바뀌었는지 봅니다.</li>
+      <li>데이터를 다시 만듭니다.
+        <pre>python3 도구/대시보드갱신.py</pre>
+        <span class="small dim">Windows는 <code>py -3 도구\대시보드갱신.py</code></span>
+      </li>
+      <li>이 화면을 새로 고칩니다(F5, macOS는 ⌘R).</li>
+    </ol>
+    <p style="margin-top:14px"><button class="btn reload" type="button">다시 읽기</button></p>
+  </section>
+</main>
+
+<footer class="wrap">
+  <div class="foot">
+    <p id="generated">데이터 생성 시각: 없음</p>
+    <p>이 화면은 에이전트 기록을 모아 보여 줍니다. 원문 대조와 최종 판단은 최종 검수자가 합니다. 자세한 내용: <a href="../면책고지.md" title="저장소 맨 위의 면책고지.md">면책고지.md</a></p>
+  </div>
+</footer>
+
+<script src="대시보드_데이터.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  var DATA = window.DASHBOARD_DATA;
+  var SUPPORTED = [1, 2]; // data versions this page draws (2 adds deadline.via, deadline_issues, no_open_deadline)
+  var TAB_KEY = "legal-team-dashboard:last-tab";
+  var WD = ["일", "월", "화", "수", "목", "금", "토"];
+  var STATUS_TONE = { "진행 중": "accent", "사람 확인 대기": "warn", "기록 없음": "danger", "종결": "neutral" };
+  var STATUS_ORDER = ["사람 확인 대기", "진행 중", "기록 없음", "종결"];
+  var VERDICT_TONE = { "통과": "ok", "보완": "warn", "반려": "danger" };
+  var STATE_TONE = { "제안": "outline", "확정": "accent", "완료": "ok", "취소": "neutral" };
+  var DATE_RE = /(\d{4})\s*[.\-\/]\s*(\d{1,2})\s*[.\-\/]\s*(\d{1,2})/;
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('#tabs [role="tab"]'));
+  var uid = 0;
+
+  // ---- DOM helpers (data only ever goes in through text nodes) ----
+  function h(tag, attrs, kids) {
+    var node = document.createElement(tag);
+    if (attrs) {
+      Object.keys(attrs).forEach(function (k) {
+        var v = attrs[k];
+        if (v === null || v === undefined || v === false) return;
+        if (k === "class") node.className = v;
+        else if (k.slice(0, 2) === "on" && typeof v === "function") node.addEventListener(k.slice(2), v);
+        else node.setAttribute(k, v === true ? "" : String(v));
+      });
+    }
+    return add(node, kids);
+  }
+  function add(node, kids) {
+    if (kids === null || kids === undefined || kids === false) return node;
+    if (!Array.isArray(kids)) kids = [kids];
+    kids.forEach(function (k) {
+      if (k === null || k === undefined || k === false || k === "") return;
+      node.appendChild(k instanceof Node ? k : document.createTextNode(String(k)));
+    });
+    return node;
+  }
+  function clear(node) { while (node.firstChild) node.removeChild(node.firstChild); return node; }
+  function rich(text) {
+    // Backtick spans become <code>; everything stays text.
+    var frag = document.createDocumentFragment();
+    String(text === null || text === undefined ? "" : text).split("`").forEach(function (part, i) {
+      if (part === "") return;
+      frag.appendChild(i % 2 ? h("code", null, part) : document.createTextNode(part));
+    });
+    return frag;
+  }
+  function orDash(text) {
+    var t = text === null || text === undefined ? "" : String(text).trim();
+    return t && t !== "-" ? rich(t) : h("span", { class: "dim" }, "—");
+  }
+  function breakable(text) {
+    // Folder names: allow a line break after each "_" (20261021_법안검토_○○법)
+    var frag = document.createDocumentFragment();
+    var parts = String(text || "").split("_");
+    parts.forEach(function (part, i) {
+      frag.appendChild(document.createTextNode(part + (i < parts.length - 1 ? "_" : "")));
+      if (i < parts.length - 1) frag.appendChild(document.createElement("wbr"));
+    });
+    return frag;
+  }
+  function badge(text, tone) { return h("span", { class: "badge " + (tone || "neutral") }, text); }
+  function nextId(prefix) { uid += 1; return prefix + "-" + uid; }
+
+  // ---- Dates ----
+  function pad(n) { n = String(n); return n.length < 2 ? "0" + n : n; }
+  function isoDate(s) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || "");
+    return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null;
+  }
+  function localIso(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+  function fmtDate(s, opt) {
+    opt = opt || {};
+    var d = isoDate(s);
+    if (!d) return "";
+    var today = DATA && isoDate(DATA.today);
+    var sameYear = opt.short && today && today.getFullYear() === d.getFullYear();
+    var t = (sameYear ? "" : d.getFullYear() + ". ") + (d.getMonth() + 1) + ". " + d.getDate() + ".";
+    if (opt.weekday !== false) t += "(" + WD[d.getDay()] + ")";
+    return t;
+  }
+  function ddayText(n) { return n === 0 ? "D-day" : n > 0 ? "D-" + n : "D+" + (-n); }
+  function ddayChip(n, dueDays, closed) {
+    if (typeof n !== "number") return null;
+    if (closed) return h("span", { class: "chip neutral", title: "완료·취소된 일정" }, ddayText(n));
+    var tone = n < 0 ? "danger" : n <= 3 ? "warn" : n <= dueDays ? "accent" : "neutral";
+    return h("span", { class: "chip " + tone, title: n < 0 ? "마감일이 지났습니다" : "남은 날" }, ddayText(n));
+  }
+
+  // ---- Sorting ----
+  function textSort(t) {
+    t = String(t === null || t === undefined ? "" : t).trim();
+    if (!t || t === "-" || t === "—") return null;
+    if (/^-?\d+(\.\d+)?$/.test(t)) return +t;
+    var m = DATE_RE.exec(t);
+    if (m && m.index === 0) return m[1] + "-" + pad(m[2]) + "-" + pad(m[3]) + t.slice(m[0].length);
+    return t;
+  }
+  function cmp(a, b) {
+    if (a === null && b === null) return 0;
+    if (a === null) return 1;
+    if (b === null) return -1;
+    if (typeof a === "number" && typeof b === "number") return a - b;
+    return String(a).localeCompare(String(b), "ko");
+  }
+
+  // ---- Table builder: sortable headers, optional expandable detail rows ----
+  function makeTable(opt) {
+    var state = { col: -1, dir: 1, rows: opt.rows || [] };
+    var expanded = {};
+    var wrap = h("div", { class: "table-wrap", role: "region", "aria-label": opt.label, tabindex: "0" });
+    var table = h("table", { class: "stack" });
+    if (opt.minWidth) table.style.minWidth = opt.minWidth + "px";
+    if (opt.columns.every(function (c) { return c.w; })) {
+      table.style.tableLayout = "fixed";
+      table.appendChild(h("colgroup", null, opt.columns.map(function (c) { return h("col", { style: "width:" + c.w }); })));
+    }
+    var headRow = h("tr");
+    var ths = opt.columns.map(function (col, i) {
+      var th = h("th", { scope: "col", class: col.cls || null });
+      if (col.nosort) th.textContent = col.label;
+      else {
+        th.appendChild(h("button", {
+          type: "button", class: "sort",
+          onclick: function () { state.dir = state.col === i ? -state.dir : 1; state.col = i; draw(); }
+        }, [col.label, h("span", { class: "arrow", "aria-hidden": "true" })]));
+      }
+      headRow.appendChild(th);
+      return th;
+    });
+    var tbody = h("tbody");
+    table.appendChild(h("thead", null, headRow));
+    table.appendChild(tbody);
+    wrap.appendChild(table);
+    var emptyBox = h("div", { class: "table-empty", hidden: true });
+    var box = h("div", null, [wrap, emptyBox]);
+
+    function draw() {
+      clear(tbody);
+      var rows = state.rows.map(function (r, i) { return [r, i]; });
+      if (state.col >= 0) {
+        var get = opt.columns[state.col].sort;
+        rows.sort(function (a, b) {
+          var va = get(a[0]), vb = get(b[0]);
+          var c = va === null || vb === null ? cmp(va, vb) : cmp(va, vb) * state.dir;
+          return c || a[1] - b[1];
+        });
+      }
+      ths.forEach(function (th, i) {
+        var arrow = th.querySelector(".arrow");
+        if (i === state.col) th.setAttribute("aria-sort", state.dir > 0 ? "ascending" : "descending");
+        else th.removeAttribute("aria-sort");
+        if (arrow) arrow.textContent = i === state.col ? (state.dir > 0 ? "▲" : "▼") : "";
+      });
+      rows.forEach(function (pair) {
+        var r = pair[0];
+        var tr = h("tr", { class: opt.rowClass ? opt.rowClass(r) : null });
+        var detailRow = null, btn = null;
+        opt.columns.forEach(function (col, ci) {
+          var td = h("td", { class: col.cls || null, "data-label": col.label });
+          var content = col.cell(r);
+          if (content instanceof Element && content.className === "dim" && content.textContent === "—") td.classList.add("blank");
+          if (ci === 0 && opt.detail) {
+            var key = opt.key(r);
+            var id = nextId("detail");
+            var open = !!expanded[key];
+            btn = h("button", { type: "button", class: "exp", "aria-expanded": open ? "true" : "false", "aria-controls": id },
+              [h("span", { class: "exp-icon", "aria-hidden": "true" }), content]);
+            detailRow = h("tr", { class: "detail", id: id, hidden: !open },
+              h("td", { colspan: String(opt.columns.length) }, opt.detail(r)));
+            btn.addEventListener("click", function () {
+              var now = btn.getAttribute("aria-expanded") !== "true";
+              btn.setAttribute("aria-expanded", now ? "true" : "false");
+              detailRow.hidden = !now;
+              if (now) expanded[key] = true; else delete expanded[key];
+            });
+            td.appendChild(btn);
+          } else {
+            add(td, content);
+          }
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+        if (detailRow) tbody.appendChild(detailRow);
+      });
+      var none = rows.length === 0;
+      wrap.hidden = none;
+      emptyBox.hidden = !none;
+      if (none) add(clear(emptyBox), typeof opt.empty === "function" ? opt.empty() : opt.empty);
+    }
+    draw();
+    return { node: box, setRows: function (rows) { state.rows = rows; draw(); } };
+  }
+
+  // Table from a markdown record table (현안목록, 오류노트, 훈련기록): columns kept as written
+  function recordTable(label, columns, rows, empty, minWidth) {
+    return makeTable({
+      label: label, rows: rows, empty: empty, minWidth: minWidth || 640,
+      columns: columns.map(function (name, i) {
+        var isState = name === "상태";
+        var isLong = /^(내용|공개 키워드|다음에 볼 곳|놓친 유형)/.test(name);
+        return {
+          label: name,
+          cls: isLong ? "wide" : /^(날짜|승인일|건|상태)$/.test(name) ? "nw" : null,
+          cell: function (r) {
+            var v = r[i];
+            if (isState && v) return badge(v, /^진행/.test(v) ? "accent" : /^종료/.test(v) ? "neutral" : "outline");
+            return orDash(v);
+          },
+          sort: function (r) { return textSort(r[i]); }
+        };
+      })
+    }).node;
+  }
+
+  function card(title, sub, kids, extra) {
+    var head = h("div", { class: "card-h" }, [h("h2", null, title), sub ? h("span", { class: "sub" }, sub) : null, extra || null]);
+    return h("section", { class: "card" }, [head].concat(kids));
+  }
+  function empty(text, hint) {
+    return h("div", { class: "empty" }, [h("p", null, text), hint ? h("p", { class: "hint" }, rich(hint)) : null]);
+  }
+
+  // ---- Tabs ----
+  function selectTab(name, focus) {
+    var found = tabs.some(function (t) { return t.getAttribute("data-tab") === name; });
+    if (!found) name = "summary";
+    tabs.forEach(function (t) {
+      var on = t.getAttribute("data-tab") === name;
+      t.setAttribute("aria-selected", on ? "true" : "false");
+      t.tabIndex = on ? 0 : -1;
+      document.getElementById(t.getAttribute("aria-controls")).hidden = !on;
+      if (on && focus) t.focus();
+    });
+    try { window.localStorage.setItem(TAB_KEY, name); } catch (e) { /* storage may be blocked on file:// */ }
+  }
+  function setupTabs() {
+    tabs.forEach(function (t) {
+      t.addEventListener("click", function () { selectTab(t.getAttribute("data-tab"), false); });
+    });
+    document.getElementById("tabs").addEventListener("keydown", function (ev) {
+      var i = tabs.indexOf(document.activeElement);
+      if (i < 0) return;
+      var j = null;
+      if (ev.key === "ArrowRight" || ev.key === "ArrowDown") j = (i + 1) % tabs.length;
+      else if (ev.key === "ArrowLeft" || ev.key === "ArrowUp") j = (i - 1 + tabs.length) % tabs.length;
+      else if (ev.key === "Home") j = 0;
+      else if (ev.key === "End") j = tabs.length - 1;
+      if (j === null) return;
+      ev.preventDefault();
+      selectTab(tabs[j].getAttribute("data-tab"), true);
+    });
+    var saved = null;
+    try { saved = window.localStorage.getItem(TAB_KEY); } catch (e) { saved = null; }
+    selectTab(saved || "summary", false);
+  }
+  function tabCount(name, n) {
+    var t = document.getElementById("tab-" + name);
+    if (t && n) t.appendChild(h("span", { class: "count" }, String(n)));
+  }
+
+  // ---- No data, or data this page cannot draw ----
+  function showMessage(id, meta) {
+    tabs.forEach(function (t) { t.disabled = true; });
+    document.querySelector(".nav").hidden = true;
+    Array.prototype.forEach.call(document.querySelectorAll('[role="tabpanel"]'), function (p) { p.hidden = true; });
+    document.getElementById(id).hidden = false;
+    document.getElementById("meta").textContent = meta;
+    Array.prototype.forEach.call(document.querySelectorAll(".reload"), function (b) {
+      b.addEventListener("click", function () { window.location.reload(); });
+    });
+  }
+  function shapeProblem(d) {
+    if (SUPPORTED.indexOf(d.version) < 0) {
+      return "데이터 형식 판: " + String(d.version) + " · 이 화면이 읽는 판: " + SUPPORTED.join(", ");
+    }
+    if (!d.summary || typeof d.summary !== "object" || !d.summary.status || typeof d.summary.status !== "object") return "요약(summary) 항목이 없습니다.";
+    if (!Array.isArray(d.cases)) return "건 목록(cases) 항목이 없습니다.";
+    if (!d.schedule || !Array.isArray(d.schedule.rows)) return "일정(schedule) 항목이 없습니다.";
+    return "";
+  }
+
+  if (!DATA || typeof DATA !== "object") {
+    showMessage("nodata", "데이터 파일(대시보드_데이터.js)을 찾지 못했습니다.");
+    return;
+  }
+  var problem = shapeProblem(DATA);
+  if (problem) {
+    document.getElementById("mismatch-detail").textContent = problem;
+    showMessage("mismatch", "데이터 파일의 형식이 이 화면과 맞지 않습니다.");
+    return;
+  }
+
+  var S = DATA.summary;
+  var DUE = typeof S.due_days === "number" && S.due_days >= 0 ? S.due_days : 7;
+  var WITHIN = DUE === 0 ? "오늘" : DUE + "일 안";
+  var DUE_LABEL = DUE === 0 ? "오늘 마감" : DUE + "일 안 마감";
+  var cases = DATA.cases || [];
+  var schedule = DATA.schedule || { rows: [], counts: {} };
+  var filters = { team: "", status: "", due: "", hideClosed: true };
+  var casesView = null;
+  var controls = {};
+
+  // ---- Header, banners, footer ----
+  document.getElementById("meta").textContent =
+    "기준일 " + (DATA.today_label || DATA.today) + " · 데이터 생성 " + (DATA.generated_label || DATA.generated_at) + " (KST)";
+  document.getElementById("generated").textContent = "데이터 생성 시각: " + (DATA.generated_label || DATA.generated_at) + " (KST) · 기준일 " + (DATA.today_label || DATA.today);
+  var banners = document.getElementById("banners");
+  if (DATA.today && DATA.today !== localIso(new Date())) {
+    banners.appendChild(h("p", { class: "banner", role: "status" }, [
+      "이 화면은 " + (DATA.today_label || DATA.today) + " 기준입니다. 오늘 기준 D-n을 보려면 ",
+      h("code", null, "python3 도구/대시보드갱신.py"), "를 다시 실행하고 새로 고칩니다."]));
+  }
+
+  // ---- 요약 ----
+  function goCases(f) {
+    if (!casesView) { selectTab("cases", true); return; }
+    filters.team = "";
+    filters.status = f.status || "";
+    filters.due = f.due || "";
+    if (f.status === "종결") filters.hideClosed = false;
+    syncControls();
+    drawCases();
+    selectTab("cases", true);
+  }
+  function renderSummary(panel) {
+    var month = isoDate(DATA.today) ? isoDate(DATA.today).getMonth() + 1 : "";
+    var tiles = [
+      { label: "진행 중", value: S.status["진행 중"], unit: "건", hint: "팀이 작업 중인 건", tone: S.status["진행 중"] ? "accent" : "", go: function () { goCases({ status: "진행 중" }); } },
+      { label: "사람 확인 대기", value: S.status["사람 확인 대기"], unit: "건", hint: "내 결정을 기다리는 건", tone: S.status["사람 확인 대기"] ? "warn" : "", go: function () { goCases({ status: "사람 확인 대기" }); } },
+      { label: DUE_LABEL, value: S.due_soon, unit: "건", hint: DUE === 0 ? "열린 건 · D-day" : "열린 건 · D-day~D-" + DUE, tone: S.due_soon ? "accent" : "", go: function () { goCases({ due: "soon" }); } },
+      { label: "지난 마감", value: S.overdue, unit: "건", hint: "열린 건 · 마감일이 지남", tone: S.overdue ? "danger" : "", go: function () { goCases({ due: "overdue" }); } },
+      { label: "이번 달 오류노트", value: S.errors_this_month, unit: "줄", hint: month + "월에 적은 줄", tone: "", go: function () { selectTab("lore", true); } }
+    ];
+    var grid = h("div", { class: "kpis" });
+    tiles.forEach(function (t) {
+      grid.appendChild(h("button", {
+        type: "button", class: "kpi", "data-tone": t.tone || null, onclick: t.go,
+        "aria-label": t.label + " " + t.value + t.unit + ". " + t.hint + ". 자세히 보기"
+      }, [
+        h("span", { class: "kpi-label" }, t.label),
+        h("span", { class: "kpi-value" }, [String(t.value), h("small", null, t.unit)]),
+        h("span", { class: "kpi-hint" }, t.hint)
+      ]));
+    });
+    panel.appendChild(h("h2", { class: "sr-only" }, "요약"));
+    panel.appendChild(grid);
+
+    // Waiting for the person
+    var waiting = cases.filter(function (c) { return c.status === "사람 확인 대기"; });
+    var waitBody;
+    if (!waiting.length) waitBody = empty("지금 결정을 기다리는 건이 없습니다.", "팀장이 결정을 기다리면 `_진행.md`의 다음 할 일이 `[사람 확인]`으로 바뀌고 여기에 나타납니다.");
+    else {
+      waitBody = h("ul", { class: "items" }, waiting.map(function (c) {
+        var ask = String(c.next || "").replace(/^[`*\s]*\[사람\s*확인\]\s*/, "");
+        return h("li", null, [
+          h("div", { class: "line1" }, [h("span", { class: "title folder" }, breakable(c.folder)), c.deadline ? ddayChip(c.deadline.dday, DUE) : null]),
+          h("div", { class: "line2" }, rich(ask || "(물을 것이 적혀 있지 않습니다)")),
+          h("div", { class: "line2 dim small" }, [c.team || "팀 미상", c.deadline ? " · 마감 " + fmtDate(c.deadline.date, { short: true }) + " " + (c.deadline.what || "") : ""])
+        ]);
+      }));
+    }
+    // Upcoming schedule
+    var soon = (schedule.rows || []).filter(function (r) {
+      return r.bucket !== "closed" && r.bucket !== "bad" && typeof r.dday === "number" && r.dday >= 0 && r.dday <= DUE;
+    });
+    var soonBody;
+    if (!soon.length) soonBody = empty(DUE === 0 ? "오늘 잡힌 일정이 없습니다." : "앞으로 " + WITHIN + "에 잡힌 일정이 없습니다.", "일정은 `상황실/통합일정표.md`에서 읽습니다.");
+    else {
+      soonBody = h("ul", { class: "items" }, soon.map(function (r) {
+        return h("li", null, [
+          h("div", { class: "line1" }, [
+            h("span", { class: "title" }, fmtDate(r.date, { short: true }) + (r.time && r.time !== "-" ? " " + r.time : "")),
+            ddayChip(r.dday, DUE), badge(r.state, STATE_TONE[r.state])
+          ]),
+          h("div", { class: "line2" }, [r.what || "", r.kind ? h("span", { class: "dim" }, " · " + r.kind) : null]),
+          r.case && r.case !== "-" ? h("div", { class: "line2 dim small" }, r.case) : null
+        ]);
+      }));
+    }
+    var past = (schedule.counts || {}).past || 0;
+    var pastNote = past ? h("p", { class: "note" }, [
+      "지난 미완료 일정 " + past + "줄이 있습니다. ",
+      h("button", { type: "button", class: "linkbtn", onclick: function () { selectTab("schedule", true); } }, "일정 탭에서 보기")
+    ]) : null;
+    panel.appendChild(h("div", { class: "grid-2" }, [
+      card("내 결정을 기다리는 건", waiting.length + "건", [waitBody]),
+      card("다가오는 일정", WITHIN + " · " + soon.length + "줄", [soonBody, pastNote])
+    ]));
+
+    var warnings = DATA.warnings || [];
+    if (warnings.length) {
+      panel.appendChild(card("읽기 경고", warnings.length + "건 · 고치면 다음 갱신 때 사라집니다", [
+        h("ul", { class: "warnlist" }, warnings.map(function (w) {
+          return h("li", null, [badge("경고", "warn"), h("code", null, w.path), h("span", null, w.message)]);
+        }))
+      ]));
+    } else {
+      panel.appendChild(h("p", { class: "dim small" }, "읽기 경고 없음. 읽은 자료와 경로는 설정 탭의 데이터 출처에 있습니다."));
+    }
+  }
+
+  // ---- 건 진행 ----
+  function caseDetail(c) {
+    var rows = [];
+    function kv(k, v) { rows.push(h("dt", null, k), h("dd", null, v)); }
+    kv("기록 파일", h("code", null, c.path + (c.status === "기록 없음" ? "" : "_진행.md")));
+    kv("대상", orDash(c.target));
+    kv("넘겨받은 자료", orDash(c.handed));
+    var due = [orDash(c.deadline_text)];
+    if (c.deadline) {
+      due.push(h("div", { class: "small" }, [
+        "→ " + (c.deadline.what || "일정") + " · " + fmtDate(c.deadline.date) + (c.deadline.time && c.deadline.time !== "-" ? " " + c.deadline.time : "") + " · ",
+        badge(c.deadline.state, STATE_TONE[c.deadline.state]), " ", h("code", null, c.deadline.id)
+      ]));
+      var via = Array.isArray(c.deadline.via) ? c.deadline.via : [];
+      if (via.length) due.push(h("div", { class: "small dim" }, "통합일정표의 대체 줄(S-… 대체)을 따라 찾았습니다: " + via.concat([c.deadline.id]).join(" → ")));
+    } else if (c.deadline_note) {
+      due.push(h("div", { class: "small" + (c.no_open_deadline ? "" : " dim") }, [c.no_open_deadline ? badge("열린 마감 없음", "warn") : null, c.no_open_deadline ? " " : "", c.deadline_note]));
+    }
+    kv("마감", due);
+    var d = c.last_decision;
+    kv("사람 결정", c.decision_count ? [c.decision_count + "건 · 마지막: ", (d.when || "") + " " + (d.stage || ""), d.asked ? h("span", { class: "dim" }, " — " + d.asked) : null] : orDash(""));
+    var k = c.last_check;
+    kv("검증", c.check_count ? [c.check_count + "회 · 마지막: " + (k.round ? k.round + "회차 " : ""), badge(k.verdict || "?", VERDICT_TONE[k.verdict]),
+      k.findings ? h("span", { class: "dim" }, " 지적 " + k.findings) : null, k.when ? h("span", { class: "dim" }, " · " + k.when) : null] : orDash(""));
+    var a = c.last_approval;
+    kv("승인", c.approval_count ? [c.approval_count + "건 · 마지막: " + [a.when, a.who].filter(Boolean).join(" · ") + " ", a.file ? h("code", null, a.file) : null] : orDash(""));
+    if (c.warnings && c.warnings.length) kv("경고", h("div", null, c.warnings.map(function (w) { return h("div", null, [badge("경고", "warn"), " ", w]); })));
+    return h("dl", { class: "kv" }, rows);
+  }
+  function caseMatches(c) {
+    if (filters.team && c.team !== filters.team) return false;
+    if (filters.status) { if (c.status !== filters.status) return false; }
+    else if (filters.hideClosed && c.status === "종결") return false;
+    var open = c.status === "진행 중" || c.status === "사람 확인 대기";
+    var dd = c.deadline ? c.deadline.dday : null;
+    if (filters.due === "soon" && !(open && dd !== null && dd >= 0 && dd <= DUE)) return false;
+    if (filters.due === "overdue" && !(open && dd !== null && dd < 0)) return false;
+    if (filters.due === "none" && c.deadline) return false;
+    if (filters.due === "lost" && !c.no_open_deadline) return false;
+    return true;
+  }
+  function drawCases() {
+    var shown = cases.filter(caseMatches);
+    casesView.setRows(shown);
+    controls.count.textContent = shown.length + "건 표시 · 전체 " + cases.length + "건";
+  }
+  function syncControls() {
+    controls.team.value = filters.team;
+    controls.status.value = filters.status;
+    controls.due.value = filters.due;
+    controls.hide.checked = filters.hideClosed;
+    controls.hide.disabled = !!filters.status;
+  }
+  function select(id, label, options, onchange) {
+    var s = h("select", { id: id }, options.map(function (o) { return h("option", { value: o[0] }, o[1]); }));
+    s.addEventListener("change", onchange);
+    return { field: h("label", { class: "field", for: id }, [label, s]), select: s };
+  }
+  function renderCases(panel) {
+    var teams = [];
+    cases.forEach(function (c) { if (c.team && teams.indexOf(c.team) < 0) teams.push(c.team); });
+    teams.sort(function (a, b) { return a.localeCompare(b, "ko"); });
+    var fTeam = select("f-team", "팀", [["", "전체"]].concat(teams.map(function (t) { return [t, t]; })), function () { filters.team = this.value; drawCases(); });
+    var fStatus = select("f-status", "상태", [["", "전체"]].concat(STATUS_ORDER.map(function (s) { return [s, s]; })),
+      function () { filters.status = this.value; syncControls(); drawCases(); });
+    var fDue = select("f-due", "마감", [["", "전체"], ["soon", WITHIN], ["overdue", "지난 마감"], ["none", "마감 없음"], ["lost", "열린 마감 없음"]], function () { filters.due = this.value; drawCases(); });
+    var hide = h("input", { type: "checkbox", id: "f-hide", checked: true });
+    hide.addEventListener("change", function () { filters.hideClosed = hide.checked; drawCases(); });
+    var count = h("span", { class: "count", "aria-live": "polite" });
+    controls = { team: fTeam.select, status: fStatus.select, due: fDue.select, hide: hide, count: count };
+
+    casesView = makeTable({
+      label: "건 진행 표", minWidth: 940, rows: [],
+      key: function (c) { return c.folder; },
+      detail: caseDetail,
+      empty: function () {
+        return cases.length
+          ? empty("조건에 맞는 건이 없습니다.", "필터를 바꾸거나 '종결 숨기기'를 끕니다.")
+          : empty("아직 건 폴더가 없습니다.", "팀장이 건을 시작하면 `산출물/` 아래에 건 폴더와 `_진행.md`가 생깁니다.");
+      },
+      columns: [
+        { label: "건 폴더", cls: "folder-col", cell: function (c) { return h("span", { class: "folder" }, breakable(c.folder)); }, sort: function (c) { return c.folder; } },
+        { label: "팀", cls: "nw", cell: function (c) { return orDash(c.team); }, sort: function (c) { return c.team || null; } },
+        { label: "접수일", cls: "nw num", cell: function (c) { return c.received ? fmtDate(c.received, { weekday: false }) : orDash(""); }, sort: function (c) { return c.received; } },
+        { label: "현재 단계", cls: "mid", cell: function (c) { return orDash(c.stage); }, sort: function (c) { return textSort(c.stage); } },
+        { label: "다음 할 일", cls: "wide", cell: function (c) { return orDash(c.next); }, sort: function (c) { return c.next || null; } },
+        { label: "최근 검증", cls: "nw", cell: function (c) {
+            var k = c.last_check;
+            if (!k) return orDash("");
+            return h("span", { class: "verdict" }, [k.round ? k.round + "회차" : "", badge(k.verdict || "?", VERDICT_TONE[k.verdict])]);
+          }, sort: function (c) { return c.last_check ? c.last_check.round : null; } },
+        { label: "마감", cls: "nw", cell: function (c) {
+            if (!c.deadline) return c.no_open_deadline ? badge("열린 마감 없음", "warn") : orDash("");
+            return h("span", { class: "due" }, [fmtDate(c.deadline.date, { short: true }), ddayChip(c.deadline.dday, DUE)]);
+          }, sort: function (c) { return c.deadline ? c.deadline.dday : null; } },
+        { label: "상태", cls: "nw", cell: function (c) { return badge(c.status, STATUS_TONE[c.status]); }, sort: function (c) { return STATUS_ORDER.indexOf(c.status); } }
+      ]
+    });
+    panel.appendChild(card("건 진행", "산출물/*/_진행.md 기준 · 건 폴더를 누르면 자세히 봅니다", [
+      h("div", { class: "toolbar" }, [fTeam.field, fStatus.field, fDue.field,
+        h("label", { class: "check", for: "f-hide" }, [hide, h("span", null, "종결 숨기기")]), count]),
+      casesView.node
+    ]));
+    syncControls();
+    drawCases();
+  }
+
+  // ---- 일정 ----
+  function scheduleTable(rows, label, emptyText) {
+    return makeTable({
+      label: label, rows: rows, minWidth: 860, empty: empty(emptyText),
+      columns: [
+        { label: "날짜", w: "10%", cls: "nw num", cell: function (r) { return r.date ? fmtDate(r.date, { short: true }) : orDash(r.date_text); }, sort: function (r) { return r.date; } },
+        { label: "시각", w: "10%", cls: "num", cell: function (r) { return orDash(r.time); }, sort: function (r) { return textSort(r.time); } },
+        { label: "D-n", w: "7%", cls: "nw", cell: function (r) { return typeof r.dday !== "number" ? orDash("") : ddayChip(r.dday, DUE, r.bucket === "closed"); }, sort: function (r) { return typeof r.dday === "number" ? r.dday : null; } },
+        { label: "일", w: "19%", cell: function (r) { return h("span", { class: r.state === "취소" ? "strike" : null }, rich(r.what)); }, sort: function (r) { return r.what || null; } },
+        { label: "종류", w: "6%", cls: "nw", cell: function (r) { return orDash(r.kind); }, sort: function (r) { return r.kind || null; } },
+        { label: "건", w: "21%", cell: function (r) { return orDash(r.case); }, sort: function (r) { return textSort(r.case); } },
+        { label: "상태", w: "8%", cls: "nw", cell: function (r) { return r.state ? badge(r.state, STATE_TONE[r.state] || "outline") : orDash(""); }, sort: function (r) { return r.state || null; } },
+        { label: "일정 ID", w: "11%", cls: "nw", cell: function (r) { return r.id ? h("code", null, r.id) : orDash(""); }, sort: function (r) { return r.id || null; } },
+        { label: "캘린더", w: "8%", cls: "nw", cell: function (r) {
+            var c = r.calendar || "";
+            var t = /^gcal:/.test(c) ? "Google" : /^ics /.test(c) ? "ics" : /^외부:/.test(c) ? "외부 일정" : "";
+            return t ? h("span", { title: c }, t) : orDash("");
+          }, sort: function (r) { return r.calendar && r.calendar !== "-" ? r.calendar : null; } }
+      ]
+    }).node;
+  }
+  function renderSchedule(panel) {
+    var rows = schedule.rows || [];
+    function of(b) { return rows.filter(function (r) { return r.bucket === b; }); }
+    if (!rows.length) {
+      panel.appendChild(empty("통합일정표에 일정이 아직 없습니다.", "팀이 `제안` 줄을 넣고 상황실이 사람 승인을 받아 `확정`으로 바꿉니다. 일정은 `상황실/통합일정표.md`에서 읽습니다."));
+      return;
+    }
+    var range = fmtDate(DATA.today, { short: true }) + "~" + fmtDate(schedule.next_end, { short: true });
+    panel.appendChild(h("p", { class: "dim small" }, rich("`상황실/통합일정표.md`의 줄을 기준일(" + (DATA.today_label || "") + ")로 나눕니다. 완료·취소 줄은 맨 아래에 모았습니다.")));
+    var parts = [
+      ["past", "지난 미완료", "기준일 전인데 완료·취소가 아닌 줄", "지난 미완료 일정이 없습니다."],
+      ["next", "오늘부터 " + (schedule.next_days || 14) + "일", range, "이 기간에 잡힌 일정이 없습니다."],
+      ["later", "그 뒤", fmtDate(addDays(schedule.next_end, 1), { short: true }) + "부터", "그 뒤로 잡힌 일정이 없습니다."]
+    ];
+    parts.forEach(function (p) {
+      var list = of(p[0]);
+      var title = h("span", { class: "bucket-h" }, [h("span", { class: "mark " + p[0], "aria-hidden": "true" }), p[1]]);
+      var sec = h("section", { class: "card" }, [
+        h("div", { class: "card-h" }, [h("h2", null, title), h("span", { class: "sub" }, list.length + "줄 · " + p[2])]),
+        scheduleTable(list, p[1] + " 일정", p[3])
+      ]);
+      panel.appendChild(sec);
+    });
+    var closed = of("closed");
+    if (closed.length) {
+      panel.appendChild(h("details", { class: "more" }, [h("summary", null, "완료·취소 " + closed.length + "줄"), scheduleTable(closed, "완료·취소 일정", "")]));
+    }
+    var bad = of("bad");
+    if (bad.length) {
+      panel.appendChild(h("details", { class: "more", open: true }, [
+        h("summary", null, "날짜를 읽지 못한 줄 " + bad.length + "줄"),
+        h("p", { class: "dim small", style: "margin-bottom:10px" }, rich("날짜는 `2026. 11. 5.(목)` 형식으로 씁니다(`상황실/통합일정표.md` 머리).")),
+        scheduleTable(bad, "날짜 오류 일정", "")
+      ]));
+    }
+  }
+  function addDays(iso, n) {
+    var d = isoDate(iso);
+    if (!d) return "";
+    d.setDate(d.getDate() + n);
+    return localIso(d);
+  }
+
+  // ---- 현안 ----
+  function renderIssues(panel) {
+    var is = DATA.issues || { columns: [], rows: [] };
+    var body = is.rows.length
+      ? recordTable("현안목록 표", is.columns, is.rows, "", 760)
+      : empty("등록된 현안이 없습니다.", "현안 등록 대상 팀 팀장이 건 폴더를 만들 때 공개 키워드를 승인받아 `상황실/현안목록.md`에 적습니다.");
+    panel.appendChild(card("현안목록", "진행 " + (is.open || 0) + " · 종료 " + (is.closed || 0), [
+      body,
+      h("p", { class: "note" }, "동기화되는 목록이라 공개 키워드만 적혀 있습니다. 아침 뉴스(/ops-desk 뉴스)가 이 목록으로 현안 소식을 찾습니다.")
+    ]));
+  }
+
+  // ---- 교본·오류 ----
+  function bars(title, pairs) {
+    var max = pairs.reduce(function (m, p) { return Math.max(m, p[1]); }, 0) || 1;
+    return h("div", { class: "bars" }, [
+      h("h3", null, title),
+      pairs.length ? h("ul", null, pairs.slice(0, 8).map(function (p) {
+        return h("li", null, [
+          h("span", { class: "name", title: p[0] }, p[0]),
+          h("span", { class: "track", "aria-hidden": "true" }, h("span", { class: "fill", style: "width:" + Math.round(p[1] / max * 100) + "%" })),
+          h("span", { class: "n" }, String(p[1]))
+        ]);
+      }).concat(pairs.length > 8 ? [h("li", { class: "dim small" }, "외 " + (pairs.length - 8) + "개")] : [])) : h("p", { class: "dim small" }, "기록 없음")
+    ]);
+  }
+  function renderLore(panel) {
+    var e = DATA.errors || { columns: [], latest: [], by_type: [], by_finder: [], by_team: [] };
+    var finder = {};
+    (e.by_finder || []).forEach(function (p) { finder[p[0]] = p[1]; });
+    var errBody = [];
+    if (e.total) {
+      errBody.push(h("div", { class: "stats" }, [
+        [e.total, "전체 줄"], [e.this_month, "이번 달"], [finder["사람"] || 0, "사람이 찾음"], [finder["상급자"] || 0, "상급자가 찾음"], [finder["오탐"] || 0, "오탐"]
+      ].map(function (s) { return h("div", { class: "stat" }, [h("div", { class: "v" }, String(s[0])), h("div", { class: "l" }, s[1])]); })));
+      errBody.push(h("div", { class: "grid-3" }, [bars("유형별", e.by_type || []), bars("발견자별", e.by_finder || []), bars("팀별", e.by_team || [])]));
+      errBody.push(h("h3", { class: "sub-h" }, "최근 " + e.latest.length + "줄"));
+      errBody.push(recordTable("최근 오류노트 표", e.columns, e.latest, "", 900));
+    } else {
+      errBody.push(empty("오류노트에 아직 기록이 없습니다.", "건이 끝나면 팀장이 검증·사람·상급자가 찾은 오류와 오탐을 `라운지/오류노트.md`에 한 줄씩 적습니다."));
+    }
+    panel.appendChild(card("오류노트", "익명 기록 · " + (e.total || 0) + "줄", errBody));
+
+    var t = DATA.training || { columns: [], latest: [] };
+    panel.appendChild(card("훈련기록", (t.total || 0) + "회", [
+      t.total ? recordTable("훈련기록 표", t.columns, t.latest, "", 640)
+        : empty("훈련기록이 없습니다.", "운영 설정의 훈련 주기마다 `/coaching 훈련`과 `/coaching 채점`을 하면 기록이 쌓입니다.")
+    ]));
+
+    var cls = DATA.checklists || [];
+    var clBody = cls.length ? h("div", { class: "grid-3" }, cls.map(function (c) {
+      var other = (c.states || []).filter(function (s) { return s[0] !== "사용"; });
+      return h("article", { class: "cl" }, [
+        h("h3", null, c.type),
+        h("div", { class: "row" }, [badge("사용 " + c.in_use, "ok")].concat(other.map(function (s) { return badge(s[0] + " " + s[1], "neutral"); }))),
+        h("code", null, c.path),
+        c.items.length ? h("details", null, [
+          h("summary", null, "사용 항목 " + c.items.length + "개 보기"),
+          h("ol", null, c.items.map(function (it) {
+            return h("li", null, [rich(it.check), h("span", { class: "dim" }, " · " + [it.code, it.severity].filter(Boolean).join(" · "))]);
+          }))
+        ]) : null
+      ]);
+    })) : empty("검수 체크리스트가 아직 없습니다.", "역량강화실이 `/coaching 교본갱신`으로 오류노트에서 갱신안을 만들고, 사람이 채택한 항목만 넣습니다.");
+    panel.appendChild(card("검수 체크리스트", cls.length + "개 유형 · 상태가 사용인 항목만 검증에 쓰입니다", [clBody]));
+  }
+
+  // ---- 조직도 ----
+  function reviewerTitle() {
+    var row = (DATA.settings || []).filter(function (s) { return s.item === "최종 검수자 호칭"; })[0];
+    return row ? row.value : "";
+  }
+  function isPerson(r) { return r.name === "나" || /최종 검수자/.test(r.note || ""); }
+  function roomCard(r, teams) {
+    var person = isPerson(r);
+    var isTeam = r.teams && r.teams.length;
+    var node = h("article", { class: "room" + (isTeam ? " team" : " plain") + (person ? " person" : "") });
+    node.appendChild(h("h3", null, r.name));
+    if (person) {
+      var title = reviewerTitle();
+      node.appendChild(h("p", { class: "room-note" }, "최종 검수자" + (title ? " · 호칭 " + title + "(운영 설정)" : "") + ". 승인한 것만 최종본이 됩니다."));
+      return node;
+    }
+    if (!isTeam) {
+      if (r.note) node.appendChild(h("p", { class: "room-note" }, rich(r.note)));
+      return node;
+    }
+    // The note minus its leading command, e.g. "아침 뉴스·현안은 `/ops-desk 뉴스`, ..." for 상황실
+    var rest = String(r.note || "").replace(/^`\/[^`]*`\s*[,，]?\s*/, "").trim();
+    r.teams.forEach(function (id) {
+      var t = teams[id] || { title: id, summary: "", agents: [], hint: "" };
+      node.appendChild(h("div", { class: "cmds" }, [h("code", { class: "cmd" }, "/" + id), t.hint ? h("span", { class: "dim small" }, t.hint) : null]));
+      if (rest) node.appendChild(h("p", { class: "room-note" }, rich(rest)));
+      if (t.summary) node.appendChild(h("p", { class: "team-summary" }, t.summary));
+      var writers = t.agents.filter(function (a) { return a.role === "실무"; });
+      var checkers = t.agents.filter(function (a) { return a.role === "검증"; });
+      node.appendChild(h("dl", { class: "roles" }, [
+        h("dt", null, "팀장"), h("dd", null, [h("code", null, id), h("span", { class: "dim" }, "스킬")]),
+        h("dt", null, "실무"), h("dd", null, writers.length ? writers.map(function (a) { return h("code", null, a.name); }) : h("span", { class: "dim" }, "—")),
+        h("dt", null, "검증"), h("dd", null, checkers.length ? checkers.map(function (a) { return h("code", null, a.name); }) : h("span", { class: "dim" }, "—"))
+      ]));
+      if (t.agents.length) {
+        node.appendChild(h("details", null, [h("summary", null, "실무·검증이 하는 일")].concat(t.agents.map(function (a) {
+          return h("p", null, [h("code", null, a.name), " " + (a.summary || a.title)]);
+        }))));
+      }
+    });
+    return node;
+  }
+  function renderOrg(panel) {
+    var org = DATA.org || { floors: [], teams: {} };
+    if (!org.floors.length) {
+      panel.appendChild(empty("건물 배치를 읽지 못했습니다.", "`CLAUDE.md`의 '건물 배치' 줄(- 3F …: …)에서 읽습니다."));
+      return;
+    }
+    panel.appendChild(h("p", { class: "dim small" }, rich("`CLAUDE.md` 건물 배치와 팀장 스킬(`.claude/skills/`)·에이전트(`.claude/agents/`)에서 읽었습니다. 명령은 Claude 대화창에 그대로 입력합니다.")));
+    panel.appendChild(h("div", { class: "building" }, org.floors.map(function (f) {
+      var id = nextId("floor");
+      var cards = f.rooms.filter(function (r) { return (r.teams && r.teams.length) || isPerson(r); });
+      var others = f.rooms.filter(function (r) { return !((r.teams && r.teams.length) || isPerson(r)); });
+      return h("section", { class: "floor", "aria-labelledby": id }, [
+        h("div", { class: "floor-label" }, [h("h2", { class: "floor-no", id: id }, f.floor), h("span", { class: "floor-title" }, f.title)]),
+        h("div", { class: "floor-body" }, [
+          cards.length ? h("div", { class: "rooms" }, cards.map(function (r) { return roomCard(r, org.teams || {}); })) : null,
+          others.length ? h("ul", { class: "facilities", "aria-label": f.floor + "의 다른 방" }, others.map(function (r) {
+            return h("li", null, [h("strong", null, r.name), r.note ? h("span", { class: "dim" }, rich(r.note)) : null]);
+          })) : null
+        ])
+      ]);
+    })));
+  }
+
+  // ---- 설정 ----
+  function renderSettings(panel) {
+    var rows = DATA.settings || [];
+    var defaults = rows.filter(function (r) { return r.state === "기본값"; }).length;
+    var body = rows.length ? makeTable({
+      label: "운영 설정 표", rows: rows, minWidth: 620, empty: "",
+      columns: [
+        { label: "항목", cls: "nw", cell: function (r) { return h("strong", null, r.item); }, sort: function (r) { return r.item; } },
+        { label: "값", cls: "wide", cell: function (r) {
+            var parts = [rich(r.value)];
+            if (/입력 필요/.test(r.value || "")) parts.push(" ", badge("입력 필요", "danger"));
+            return parts;
+          }, sort: function (r) { return r.value; } },
+        { label: "상태", cls: "nw", cell: function (r) { return r.state === "기본값" ? badge("기본값", "warn") : badge(r.state || "—", "ok"); }, sort: function (r) { return r.state; } }
+      ]
+    }).node : empty("운영 설정 표를 읽지 못했습니다.", "`CLAUDE.md`의 '운영 설정' 표(항목·값·상태)에서 읽습니다.");
+    panel.appendChild(card("운영 설정", rows.length + "개 · 기본값 " + defaults + "개", [
+      body,
+      h("p", { class: "note" }, rich("상태가 기본값인 것은 아직 실제 업무로 확인하지 않은 값입니다. 고칠 곳은 `CLAUDE.md` 운영 설정 표 하나이고, 방법은 `수정안내.md`에 있습니다. 팀마다 다른 값은 각 팀장 스킬의 팀 설정 표에 있습니다."))
+    ]));
+
+    var src = DATA.sources || [];
+    panel.appendChild(card("데이터 출처", "도구가 읽은 파일", [
+      makeTable({
+        label: "데이터 출처 표", rows: src, minWidth: 560, empty: "",
+        columns: [
+          { label: "자료", cls: "nw", cell: function (s) { return s.label; }, sort: function (s) { return s.label; } },
+          { label: "경로", cls: "nw", cell: function (s) { return h("code", null, s.path); }, sort: function (s) { return s.path; } },
+          { label: "읽은 것", cell: function (s) { return s.detail; }, sort: function (s) { return s.detail; } },
+          { label: "상태", cls: "nw", cell: function (s) { return s.ok ? badge("읽음", "ok") : badge("읽지 못함", "danger"); }, sort: function (s) { return s.ok ? 0 : 1; } }
+        ]
+      }).node,
+      h("p", { class: "note" }, [
+        "기준일 " + (DATA.today_label || "") + " · " + DUE_LABEL + " 기준은 상황실 팀 설정의 '다가오는 마감 표시'입니다. ",
+        "데이터 파일은 건 내용을 담으므로 동기화하거나 게시하지 않습니다."
+      ])
+    ]));
+  }
+
+  // ---- Render: one tab's error never empties the others ----
+  function renderTab(name, fn) {
+    var panel = document.getElementById("panel-" + name);
+    try {
+      fn(panel);
+    } catch (err) {
+      clear(panel);
+      panel.appendChild(empty("이 영역을 그리지 못했습니다(" + (err && err.message ? err.message : String(err)) + ").",
+        "도구(`도구/대시보드갱신.py`)와 화면(`상황실/대시보드.html`)을 같은 판으로 맞춘 뒤 생성기를 다시 실행하고 새로 고칩니다."));
+      if (window.console && console.error) console.error(err);
+    }
+  }
+  renderTab("summary", renderSummary);
+  renderTab("cases", renderCases);
+  renderTab("schedule", renderSchedule);
+  renderTab("issues", renderIssues);
+  renderTab("lore", renderLore);
+  renderTab("org", renderOrg);
+  renderTab("settings", renderSettings);
+  tabCount("cases", S.open);
+  tabCount("issues", (DATA.issues || {}).open);
+  setupTabs();
+})();
+</script>
+</body>
+</html>
