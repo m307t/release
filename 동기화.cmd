@@ -10,18 +10,24 @@ setlocal
 rem cmd reads a batch file from disk line by line while it runs, and pulling may rewrite this very
 rem file (a new release received on another PC). So run a copy from the temp folder (the whole block
 rem below is read before it runs).
-if not defined LEGAL_OFFICE_DIR (
-  set "LEGAL_OFFICE_DIR=%~dp0"
-  if not exist "%TEMP%\legal-office-run\" mkdir "%TEMP%\legal-office-run" >nul 2>&1
-  copy /y "%~f0" "%TEMP%\legal-office-run\%~nx0" >nul 2>&1
-  if errorlevel 1 goto inplace
-  call "%TEMP%\legal-office-run\%~nx0" %*
+rem The copy leaves a mark when it starts; if it could not start (for example a policy that blocks
+rem scripts in the temp folder), this file runs in place instead.
+if defined LEGAL_OFFICE_DIR goto start
+set "LEGAL_OFFICE_DIR=%~dp0"
+set "LEGAL_OFFICE_RUN=%TEMP%\legal-office-run\%~nx0"
+if not exist "%TEMP%\legal-office-run\" mkdir "%TEMP%\legal-office-run" >nul 2>&1
+del "%LEGAL_OFFICE_RUN%.started" >nul 2>&1
+copy /y "%~f0" "%LEGAL_OFFICE_RUN%" >nul 2>&1
+if errorlevel 1 goto inplace
+(
+  call "%LEGAL_OFFICE_RUN%" %*
+  if not exist "%LEGAL_OFFICE_RUN%.started" goto inplace
   exit /b
 )
-goto start
 :inplace
-set "LEGAL_OFFICE_DIR=%~dp0"
+set "LEGAL_OFFICE_RUN="
 :start
+if defined LEGAL_OFFICE_RUN echo started>"%LEGAL_OFFICE_RUN%.started"
 cd /d "%LEGAL_OFFICE_DIR%"
 set "YES="
 if /i "%~1"=="/y" set "YES=1"
@@ -67,13 +73,15 @@ if errorlevel 1 goto noremote
 rem A public upload target (a fork of the distribution, or a repository made Public) would publish the
 rem office's records. Ask GitHub whether it is public, without signing in (a private repository answers
 rem "not found"). When there is no answer (offline, rate limit, not GitHub) carry on.
-set "PUBURL="
-for /f "delims=" %%u in ('git config --get "remote.%PUSHR%.url" 2^>nul') do set "PUBURL=%%u"
-for /f "delims=" %%u in ('git config --get "remote.%PUSHR%.pushurl" 2^>nul') do set "PUBURL=%%u"
-if not defined PUBURL goto pubdone
-powershell -NoProfile -NonInteractive -Command "$u=$env:PUBURL; if($u -match 'github\.com[:/]+([^/\s]+)/([^/\s]+?)(\.git)?/*$'){try{[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; $r=Invoke-RestMethod -UseBasicParsing -TimeoutSec 10 -Uri ('https://api.github.com/repos/'+$matches[1]+'/'+$matches[2]); if($r.private -eq $false){exit 3}}catch{}}; exit 0" >nul 2>&1
-if "%errorlevel%"=="3" goto publicrepo
-:pubdone
+rem git push uploads to every pushurl of the remote (or every url when there is none): check them all.
+set "PUBKEY=pushurl"
+git config --get "remote.%PUSHR%.pushurl" >nul 2>&1
+if errorlevel 1 set "PUBKEY=url"
+for /f "delims=" %%u in ('git config --get-all "remote.%PUSHR%.%PUBKEY%" 2^>nul') do (
+  set "PUBURL=%%u"
+  call :ispublic
+  if defined ISPUBLIC goto publicrepo
+)
 
 rem 0. Do not start on top of an unfinished merge or rebase (same test as the .sh script).
 git rev-parse -q --verify MERGE_HEAD >nul 2>&1
@@ -138,7 +146,7 @@ set "AHEAD="
 for /f %%c in ('git rev-list "@{u}..HEAD" 2^>nul') do set "AHEAD=1"
 if not defined AHEAD goto pushup
 echo Commits to upload:
-git -c core.quotepath=false log --oneline "@{u}..HEAD"
+git --no-pager -c core.quotepath=false log --oneline -40 "@{u}..HEAD"
 call :confirm
 if defined CANCEL goto cancelled
 :pushup
@@ -147,10 +155,10 @@ if errorlevel 1 goto fail
 goto done
 :pushnew
 echo Commits to upload (first upload of this branch, last 10):
-git -c core.quotepath=false log --oneline -10
+git --no-pager -c core.quotepath=false log --oneline -10
 call :confirm
 if defined CANCEL goto cancelled
-git push -q -u origin HEAD
+git push -q -u "%PUSHR%" HEAD
 if errorlevel 1 goto fail
 
 :done
@@ -178,6 +186,14 @@ echo Sync cancelled: nothing was uploaded (changes from other PCs, if any, were 
 pause
 exit /b 0
 
+:ispublic
+rem Sets ISPUBLIC when GitHub says the repository at PUBURL is public. Any failure (no PowerShell, a
+rem restricted PowerShell, offline, rate limit, not GitHub) leaves it unset.
+set "ISPUBLIC="
+powershell -NoProfile -NonInteractive -Command "$u=$env:PUBURL; if($u -match 'github\.com[:/]+([^/\s]+)/([^/\s]+?)(\.git)?/*$'){try{[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12}catch{}; try{$r=Invoke-RestMethod -UseBasicParsing -TimeoutSec 10 -Uri ('https://api.github.com/repos/'+$matches[1]+'/'+$matches[2]); if($r.private -eq $false){exit 3}}catch{}}; exit 0" >nul 2>&1
+if "%errorlevel%"=="3" set "ISPUBLIC=1"
+exit /b 0
+
 :rebasing
 rem Sets REBASING when a rebase is really in progress. A leftover REBASE_HEAD file alone does not count.
 set "REBASING="
@@ -199,7 +215,7 @@ echo Nothing was uploaded. Your changes are kept on this PC as a local commit.
 goto conflicthelp
 
 :markers
-git -c core.quotepath=false grep -I -n -E "^(<<<<<<<|>>>>>>>)( |$)" -- .
+git --no-pager -c core.quotepath=false grep -I -n -E "^(<<<<<<<|>>>>>>>)( |$)" -- .
 echo.
 echo Sync stopped: conflict markers were found. Nothing was uploaded.
 goto conflicthelp

@@ -298,7 +298,8 @@ def check_git_files():
         meta, _, name = entry.partition("\t")
         if meta.startswith("100644"):
             warnings.append(f"{name}: 실행 권한이 없이 올라가 있습니다(Windows에서 압축을 푼 경우). "
-                            f"git update-index --chmod=+x \"{name}\" 뒤 동기화합니다.")
+                            f"macOS·Linux는 chmod +x \"{name}\", Windows는 git update-index --chmod=+x \"{name}\" "
+                            "뒤 동기화합니다(새 판 받기도 받을 때 바로잡습니다).")
 
 
 def main():

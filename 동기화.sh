@@ -139,7 +139,7 @@ fi
 # 3. Never upload conflict markers.
 MARKERS='^(<<<<<<<|>>>>>>>)( |$)'
 if git grep -I -q -E "$MARKERS" -- .; then
-  git -c core.quotepath=false grep -I -n -E "$MARKERS" -- . | head -20 || true
+  git --no-pager -c core.quotepath=false grep -I -n -E "$MARKERS" -- . | head -20 || true
   stop "충돌 표지(<<<<<<<)가 남은 파일이 있어 올리지 않았습니다."
 fi
 
@@ -167,7 +167,7 @@ else
   echo "올릴 커밋(이 브랜치를 처음 올림, 최근 10개):"
   git -c core.quotepath=false log --oneline -10 || true
   confirm_commits
-  git push -q -u origin HEAD || stop "올리기(push)에 실패했습니다." "원인을 모르겠으면 위 메시지를 Claude에게 보여 주세요."
+  git push -q -u "$PUSH_REMOTE" HEAD || stop "올리기(push)에 실패했습니다." "원인을 모르겠으면 위 메시지를 Claude에게 보여 주세요."
 fi
 echo "동기화 완료"
 BRANCH="$(git rev-parse --abbrev-ref HEAD)"

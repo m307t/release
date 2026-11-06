@@ -11,18 +11,24 @@ setlocal
 
 rem cmd reads a batch file from disk line by line while it runs, and receiving a new release may rewrite
 rem this very file. So run a copy from the temp folder (the whole block below is read before it runs).
-if not defined LEGAL_OFFICE_DIR (
-  set "LEGAL_OFFICE_DIR=%~dp0"
-  if not exist "%TEMP%\legal-office-run\" mkdir "%TEMP%\legal-office-run" >nul 2>&1
-  copy /y "%~f0" "%TEMP%\legal-office-run\%~nx0" >nul 2>&1
-  if errorlevel 1 goto inplace
-  call "%TEMP%\legal-office-run\%~nx0" %*
+rem The copy leaves a mark when it starts; if it could not start (for example a policy that blocks
+rem scripts in the temp folder), this file runs in place instead.
+if defined LEGAL_OFFICE_DIR goto start
+set "LEGAL_OFFICE_DIR=%~dp0"
+set "LEGAL_OFFICE_RUN=%TEMP%\legal-office-run\%~nx0"
+if not exist "%TEMP%\legal-office-run\" mkdir "%TEMP%\legal-office-run" >nul 2>&1
+del "%LEGAL_OFFICE_RUN%.started" >nul 2>&1
+copy /y "%~f0" "%LEGAL_OFFICE_RUN%" >nul 2>&1
+if errorlevel 1 goto inplace
+(
+  call "%LEGAL_OFFICE_RUN%" %*
+  if not exist "%LEGAL_OFFICE_RUN%.started" goto inplace
   exit /b
 )
-goto start
 :inplace
-set "LEGAL_OFFICE_DIR=%~dp0"
+set "LEGAL_OFFICE_RUN="
 :start
+if defined LEGAL_OFFICE_RUN echo started>"%LEGAL_OFFICE_RUN%.started"
 cd /d "%LEGAL_OFFICE_DIR%"
 
 rem Arguments: /y means --yes, anywhere on the line; everything else is passed on as it is.
@@ -32,7 +38,8 @@ set "YES="
 if "%~1"=="" goto argsdone
 if /i "%~1"=="/y" (set "ARGS=%ARGS% --yes" & set "YES=1") else (set "ARGS=%ARGS% %1")
 if /i "%~1"=="--yes" set "YES=1"
-shift
+rem shift /1 keeps %0 (this file's name, used below to find the tool).
+shift /1
 goto args
 :argsdone
 

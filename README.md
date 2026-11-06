@@ -49,11 +49,12 @@
 순서는 내 Private 저장소 만들기 → Claude로 열어 구성 점검 → 튜토리얼로 가상 예제 한 건 → 실제 업무입니다. 먼저 써 보기만 하려면 내 저장소 없이 8의 연습 폴더에서 튜토리얼부터 해도 됩니다.
 
 1. 설치: Git(Windows는 Git for Windows), Claude Code 또는 Claude 데스크톱 앱, Python 3.8 이상(아래 'PC마다 확인할 것'). 내 저장소를 둘 GitHub 계정도 있어야 합니다.
-2. Git 사용자 등록 (PC마다 한 번):
+2. Git 사용자 등록 (PC마다 한 번). Windows는 Git Bash나 PowerShell에서 실행합니다(명령 프롬프트는 `#` 설명 줄을 읽지 못합니다):
    ```bash
    git config --global user.name "이름"
    git config --global user.email "메일주소"
-   git config --global core.quotepath false   # show Korean file names as-is
+   # show Korean file names as-is
+   git config --global core.quotepath false
    ```
 3. 내 저장소 만들기 (처음 한 번): 배포 저장소는 공개 저장소라 그대로 쓰지 않고, 내 GitHub 계정에 **Private** 저장소를 만들어 옮깁니다. 아래 세 방법 가운데 하나로 합니다. 저장소 이름은 영문을 권합니다(예: `legal-office`).
    - **먼저 GitHub 로그인**: 내 저장소는 비공개라 PC에서 받고 올릴 때 로그인이 필요합니다. Windows는 Git for Windows가 띄우는 로그인 창에서 로그인합니다. macOS·Linux는 GitHub CLI의 `gh auth login`이나 Git Credential Manager로 먼저 로그인해 둡니다. 비밀번호를 묻는 칸에는 GitHub 계정 비밀번호가 아니라 토큰(personal access token)을 넣습니다.
@@ -86,9 +87,10 @@
 7. 우리 기관에 맞추기: "운영 설정의 기관·부서를 ○○로 바꿔 줘"처럼 요청해 `CLAUDE.md` 운영 설정을 채우고, `자료실/선례/<유형>/`에 과거 보고서를 넣습니다.
    - 통합일정표의 건 칸과 캘린더 제목에 의원 이름을 넣는 것은 배포본의 기본 형식입니다(동기화되고 Google Calendar로도 갑니다). 기관 보안 지침에 맞는지 처음에 확인하고, 바꾸려면 "통합일정표 건 칸에서 이름을 빼 줘"처럼 요청합니다(`상황실/통합일정표.md` 머리).
    - 배포본의 선례 폴더는 비어 있습니다. 그 유형의 선례도 승인한 결과물도 없으면 `/coaching` 선례대조·훈련은 맡기지 않고 멈춰, 선례 넣는 법(`자료실/선례/법안검토/README.md`)을 알려 드립니다.
-8. 실습: `튜토리얼.md`를 따라 한 건을 끝까지 돌려 봅니다. 실제 저장소가 아닌 **연습 폴더**에서 하기를 권합니다. 연습 폴더는 공개 배포 저장소를 그대로 받은 복제본이라 내 저장소가 없어도 됩니다. 아래 명령은 내 저장소 폴더(`법제업무팀`) 밖, 같은 상위 폴더에서 실행합니다.
+8. 실습: `튜토리얼.md`를 따라 한 건을 끝까지 돌려 봅니다. 실제 저장소가 아닌 **연습 폴더**에서 하기를 권합니다. 연습 폴더는 공개 배포 저장소를 그대로 받은 복제본이라 내 저장소가 없어도 됩니다. 아래 명령은 내 저장소 폴더(`법제업무팀`) 밖, 같은 상위 폴더에서 실행합니다(Windows는 Git Bash나 PowerShell).
    ```bash
-   cd ..   # if you are inside 법제업무팀, go one level up
+   # if you are inside 법제업무팀, go one level up first
+   cd ..
    git clone https://github.com/m307t/release.git 법제업무팀_연습
    git -C 법제업무팀_연습 remote remove origin
    ```

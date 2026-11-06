@@ -314,6 +314,13 @@ def fix_exec_bits(branch):
     if not lost:
         return
     git("update-index", "--chmod=+x", "--", *lost)
+    # Where git follows the file mode (macOS, Linux) the files themselves must be executable too, or the
+    # next sync would record the old mode again.
+    if git("config", "--bool", "core.filemode", check=False)[1].strip() != "false":
+        for path in lost:
+            full = ROOT / path
+            if full.is_file():
+                full.chmod(full.stat().st_mode | 0o111)
     git("commit", "-q", "-m", "실행 권한을 배포본과 같게 바로잡음: " + ", ".join(lost))
     print("실행 권한을 배포본과 같게 바로잡았습니다: " + ", ".join(lost))
 
@@ -410,6 +417,8 @@ def main():
     if ok("merge-base", "--is-ancestor", REF, "HEAD"):
         print("")
         print("이미 최신판입니다. 받을 것이 없습니다.")
+        if not args.check and not practice and ok("var", "GIT_COMMITTER_IDENT"):
+            fix_exec_bits(branch)  # e.g. after a conflict was resolved by hand, finish() did not run
         return 0
 
     graft, layout = None, "맨 위"
