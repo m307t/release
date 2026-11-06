@@ -19,17 +19,36 @@ YES=0
 if [ "${1:-}" = "--yes" ]; then YES=1; fi
 
 # Run only at the top of this folder's own git repository. When this folder sits inside another
-# repository (for example vanilla/ inside the distribution repository), git would commit and push
+# repository (for example a copy of it placed inside another project), git would commit and push
 # that outer repository instead, so stop before touching anything.
 TOP="$(git rev-parse --show-toplevel 2>/dev/null || true)"
 if [ "$TOP" != "$(pwd -P)" ]; then
   # Git for Windows prints C:/... where Git Bash prints /c/..., so ask git for the prefix as well.
   PREFIX="$(git rev-parse --show-prefix 2>/dev/null || echo "?")"
   if [ -z "$TOP" ] || [ -n "$PREFIX" ]; then
-    stop "이 폴더가 git 저장소의 맨 위가 아닙니다(배포 저장소 안의 vanilla 폴더이거나 git 저장소가 아님). 아무것도 올리거나 받지 않았습니다." \
-         "이 폴더를 밖으로 복사해 자기 저장소로 만든 뒤(README '처음 쓰는 PC' 3) 그 폴더에서 다시 실행하세요."
+    stop "이 폴더가 git 저장소의 맨 위가 아닙니다(다른 저장소 안에 든 폴더이거나 git 저장소가 아님). 아무것도 올리거나 받지 않았습니다." \
+         "README '처음 쓰는 PC'대로 받은 내 저장소 폴더에서 다시 실행하세요."
   fi
 fi
+
+# Never sync with the public distribution repository. A folder cloned straight from it keeps pointing
+# there until it is linked to your own private repository (README '처음 쓰는 PC'). Check the remotes
+# this branch pulls from and pushes to, before anything is committed.
+# Keep this address the same as 배포판.md and 동기화.cmd (구성점검 compares them).
+RELEASE_REPO='m307t/release'
+BRANCH_NOW="$(git symbolic-ref -q --short HEAD || true)"
+PULL_REMOTE="$(git config --get "branch.$BRANCH_NOW.remote" 2>/dev/null || echo origin)"
+PUSH_REMOTE="$(git config --get "branch.$BRANCH_NOW.pushRemote" 2>/dev/null || git config --get remote.pushDefault 2>/dev/null || echo "$PULL_REMOTE")"
+for r in "$PULL_REMOTE" "$PUSH_REMOTE"; do
+  # The address as written in the config and as git uses it (url.*.insteadOf rules can rewrite it).
+  for url in $(git config --get-all "remote.$r.url" 2>/dev/null; git config --get-all "remote.$r.pushurl" 2>/dev/null;
+               git remote get-url "$r" 2>/dev/null; git remote get-url --push "$r" 2>/dev/null); do
+    if printf '%s\n' "$url" | grep -Eiq "github\.com[:/]+${RELEASE_REPO}(\.git)?/*\$"; then
+      stop "이 폴더는 공개 배포 저장소($RELEASE_REPO)에 연결되어 있어 동기화하지 않습니다. 아무것도 올리거나 받지 않았습니다." \
+           "README '처음 쓰는 PC'대로 내 비공개 저장소를 만들어 연결한 뒤 다시 실행하세요. 연습 폴더는 동기화하지 않습니다."
+    fi
+  done
+done
 
 has_upstream() { git rev-parse --abbrev-ref --symbolic-full-name '@{u}' >/dev/null 2>&1; }
 rebase_in_progress() {
@@ -60,8 +79,10 @@ if [ -n "$(git status --porcelain)" ]; then
 fi
 
 # 2. Pull others' changes on top. On a real conflict, undo the pull and stop.
+#    --rebase=merges keeps merge commits (a new release received with 업데이트.sh is one) instead of
+#    flattening them, so the next update still finds where this office and the distribution meet.
 if has_upstream; then
-  if ! git pull --rebase -q; then
+  if ! git pull --rebase=merges -q; then
     if rebase_in_progress; then
       git rebase --abort >/dev/null 2>&1 || true
       stop "다른 PC의 변경과 충돌했습니다. 아무것도 올리지 않았고, 내 변경은 이 PC에 커밋으로 남아 있습니다."

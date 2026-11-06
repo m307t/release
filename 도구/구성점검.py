@@ -13,6 +13,8 @@ the lines of ``` code blocks. 변경이력.md and the table rows of the 라운�
 checked (old rows keep old names).
 Also warns about files git still tracks although .gitignore now leaves them out (a rule added after
 they were committed does not untrack them, so they keep syncing).
+Also checks 배포판.md (the release this office came from): its rows can be read, and the distribution
+repository address in it is the one the sync scripts refuse to upload to and the update tool uses.
 """
 import re
 import subprocess
@@ -243,6 +245,35 @@ def check_ignored_tracked():
                         "사람에게 묻고 git rm --cached로 뺍니다.")
 
 
+def check_release_info():
+    """배포판.md rows that the update tool reads, and the same distribution address in the scripts."""
+    info_path = ROOT / "배포판.md"
+    if not info_path.is_file():
+        errors.append("배포판.md가 없습니다(새 판 받기가 읽는 파일).")
+        return
+    rows = {}
+    for line in read(info_path).splitlines():
+        if line.startswith("## "):
+            break
+        cells = [c.strip() for c in line.strip().strip("|").split("|")] if line.startswith("|") else []
+        if len(cells) >= 2:
+            rows[cells[0]] = cells[1]
+    for key in ("배포본", "판", "배포일", "배포 저장소"):
+        if not rows.get(key):
+            errors.append(f"배포판.md: 맨 위 표에 '{key}' 줄이 없습니다.")
+    m = re.search(r"github\.com[:/]+([^/\s]+/[^/\s]+?)(?:\.git)?/*$", rows.get("배포 저장소", ""), re.I)
+    if not m:
+        if rows.get("배포 저장소"):
+            errors.append("배포판.md: 배포 저장소가 GitHub 주소가 아닙니다.")
+        return
+    repo = m.group(1)
+    for name, needle in (("동기화.sh", f"RELEASE_REPO='{repo}'"), ("동기화.cmd", f'set "RELEASE_REPO={repo}"'),
+                         ("도구/업데이트.py", f'DEFAULT_URL = "https://github.com/{repo}"')):
+        path = ROOT / name
+        if path.is_file() and needle not in read(path):
+            errors.append(f"{name}: 배포 저장소 주소가 배포판.md({repo})와 다릅니다. 함께 고칩니다(배포판.md 머리).")
+
+
 def main():
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -252,6 +283,7 @@ def main():
     check_index(teams)
     check_types(teams)
     check_ignored_tracked()
+    check_release_info()
     print(f"구성 점검: 팀 {len(teams)}개, 에이전트 {agent_count}개")
     for e in errors:
         print(f"[오류] {e}")
