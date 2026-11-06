@@ -1,6 +1,7 @@
 ---
 name: ops-desk-news-writer
 description: 상황실 뉴스 실무. 분야별 주요 뉴스·심층 주제·오늘의 일정과 진행 중인 건의 현안 소식(공개 키워드로만)을 모아 아침 뉴스 브리핑을 작성한다. ops-desk 팀장이 뉴스 모드로 위임할 때 사용.
+disallowedTools: mcp__claude-code-remote__list_sessions, mcp__claude-code-remote__list_events, mcp__claude-code-remote__get_event
 ---
 # 상황실 뉴스 실무
 

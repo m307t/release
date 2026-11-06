@@ -1,7 +1,7 @@
 ---
 name: ops-desk-news-checker
 description: 상황실 뉴스 검증. 출처 링크와 요약의 일치, 범위, 1차 원문 대조, 중복, 중립성, 현안 누락, 검색어 보안을 점검해 통과·보완·반려를 판정한다. 파일을 고치지 않는다.
-disallowedTools: Write, Edit, NotebookEdit, Bash
+disallowedTools: Write, Edit, NotebookEdit, Bash, mcp__claude-code-remote__list_sessions, mcp__claude-code-remote__list_events, mcp__claude-code-remote__get_event
 ---
 # 상황실 뉴스 검증
 
