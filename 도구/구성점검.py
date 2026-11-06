@@ -274,6 +274,33 @@ def check_release_info():
             errors.append(f"{name}: 배포 저장소 주소가 배포판.md({repo})와 다릅니다. 함께 고칩니다(배포판.md 머리).")
 
 
+def check_git_files():
+    """.gitignore and .gitattributes are hidden files that a copy (ZIP, drag and drop) can leave behind.
+    Without .gitignore the first sync uploads 산출물/ case folders and .env keys; without .gitattributes
+    the add-only tables stop syncing with a conflict. Also warns when a tracked .sh lost its executable
+    bit (a ZIP unpacked on Windows), which makes ./동기화.sh fail on macOS and Linux."""
+    needed = {".gitignore": ("산출물/**", ".env"), ".gitattributes": ("merge=union",)}
+    for name, lines in needed.items():
+        path = ROOT / name
+        if not path.is_file():
+            errors.append(f"{name}가 없습니다. 숨김 파일이라 복사할 때 빠지기 쉽습니다. 받은 배포본에서 다시 넣습니다.")
+            continue
+        text = read(path)
+        for line in lines:
+            if line not in text:
+                errors.append(f"{name}: '{line}' 줄이 없습니다. 동기화가 지켜야 할 규칙이 빠졌습니다.")
+    try:
+        out = subprocess.run(["git", "-C", str(ROOT), "ls-files", "-s", "-z", "--", "*.sh"],
+                             capture_output=True, check=True).stdout.decode("utf-8")
+    except (OSError, subprocess.CalledProcessError, UnicodeDecodeError):
+        return
+    for entry in filter(None, out.split("\0")):
+        meta, _, name = entry.partition("\t")
+        if meta.startswith("100644"):
+            warnings.append(f"{name}: 실행 권한이 없이 올라가 있습니다(Windows에서 압축을 푼 경우). "
+                            f"git update-index --chmod=+x \"{name}\" 뒤 동기화합니다.")
+
+
 def main():
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -283,6 +310,7 @@ def main():
     check_index(teams)
     check_types(teams)
     check_ignored_tracked()
+    check_git_files()
     check_release_info()
     print(f"구성 점검: 팀 {len(teams)}개, 에이전트 {agent_count}개")
     for e in errors:

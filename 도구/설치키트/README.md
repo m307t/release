@@ -23,6 +23,7 @@ kordoc · AI-Assembly(bill-review 플러그인)를 한 번에 설치합니다. K
 - kordoc MCP는 Claude Code(사용자 범위)와 Claude Desktop에 자동 등록됩니다. 등록 직전의 Desktop 설정은 `.bak`으로 백업됩니다.
 - bill-review 플러그인은 Claude Code가 설치된 경우에만 등록됩니다. 나중에 Claude Code를 설치했다면 스크립트를 다시 실행하세요.
 - 다시 실행해도 됩니다. 플러그인 폴더(`~/.ai-tools/AI-Assembly`, Windows는 `%LOCALAPPDATA%\ai-tools\AI-Assembly`)를 지우고 같은 판을 다시 복사·등록합니다. Desktop 설정 백업 `.bak`은 실행할 때마다 덮어쓰므로, 처음 설정을 보존하려면 첫 실행 뒤 `.bak`을 따로 복사해 둡니다.
+- 새 판을 받았을 때(저장소 맨 위 `README.md`의 '새 판 받기') 배포본이 바꾼 파일에 `도구/설치키트/`가 있으면 PC마다 이 키트를 다시 실행합니다. 다른 PC는 동기화로 받은 뒤 실행합니다.
 - 국가법령정보 MCP는 설치키트가 설치하지 않습니다. 연결 방법은 저장소 맨 위 `README.md`의 'PC마다 확인할 것'에 있습니다.
 - kordoc는 인터넷(npm)에서 받습니다. 나머지는 키트 안의 파일을 씁니다.
 - KISA 범피스: 제3자 프로그램이라 배포본에는 넣지 않았습니다(`제3자고지.md`). 이 배포본은 이 프로그램의 용도를 정하지 않으며 에이전트 팀도 쓰지 않으므로, 기관이 따로 정한 경우가 아니면 넣지 않아도 됩니다.
